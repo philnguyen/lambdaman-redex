@@ -41,7 +41,8 @@
   [o o₁ o₂]
   [C b
      standard fright-mode invisible
-     up right down left]
+     up right down left
+     Wall Empty Pill Power-Pill Fruit-Location Lambda-Man-Starting-Position Ghost-Starting-Position]
   [b boolean]
   [(ρ ρₓ) ((x ...) ...)]
   [(f x y z) variable-not-otherwise-mentioned]
@@ -79,6 +80,27 @@
   TUPLE : e e ... -> e
   [(TUPLE e) e]
   [(TUPLE e₁ e ...) (CONS e₁ (TUPLE e ...))])
+(define-metafunction L
+  WITH-TUPLE : [x (x x ...)] ... e -> e
+  [(WITH-TUPLE [x (y ...)] ... e)
+   (LET (any ... ...) e)
+   (where ((any ...) ...) ((WITH-TUPLE/gen x (y ...)) ...))])
+(define-metafunction L
+  WITH-TUPLE/gen : e (x x ...) -> ([x e] ...)
+  [(WITH-TUPLE/gen e (x)) ([x e])]
+  [(WITH-TUPLE/gen e (x y ...)) ([x (CAR e)] any ...)
+   (where (any ...) (WITH-TUPLE/gen (CDR e) (y ...)))])
+(define-metafunction L
+  list-case : x [(CONS x y) e] [MT e] -> e
+  [(list-case x [(CONS y z) e₁] [MT e₂])
+   (if (ATOM x) e₂
+       (LET ([y (CAR x)]
+             [z (CDR x)])
+         e₁))])
+(define-metafunction L
+  int-case : x [e e] ... #:else e -> e
+  [(int-case _ #:else e) e]
+  [(int-case x [eₓ e] any ...) (if (CEQ x eₓ) e (int-case x any ...))])
 
 (define fresh-label!
   (let ([suffix -1])
@@ -97,10 +119,13 @@
 (define-metafunction L
   t : ρ e -> GCC
   [(t _ C) ([LDC ,(case (term C)
-                    [(#f standard up) 0]
-                    [(#t fright-mode right) 1]
-                    [(invisible down) 2]
-                    [(left) 3])])]
+                    [(#f standard up Wall) 0]
+                    [(#t fright-mode right Empty) 1]
+                    [(invisible down Pill) 2]
+                    [(left Power-Pill) 3]
+                    [(Fruit-Location) 4]
+                    [(Lambda-Man-Starting-Position) 5]
+                    [(Ghost-Starting-Position) 6])])]
   [(t _ n) ([LDC n])]
   [(t ρ x) ([LD n i]) (where (n i) (index-of ρ x))]
   [(t ρ (o e ...)) (gcc ... o dec ...)
@@ -211,6 +236,18 @@
   (CONS 42
         (λ (AIᵢ wᵢ) ; step
           (CONS (ADD AIᵢ 1) down))))
+
+(define-term mine.λ
+  (CONS
+   42
+   (λ (aiᵢ wᵢ)
+     (WITH-TUPLE [wᵢ (map man ghosts fruit)]
+       (WITH-TUPLE [man (man-vitality man-loc man-dir lives score)]
+         (CONS
+          aiᵢ
+          (int-case man-vitality
+            [0 right]
+            #:else left)))))))
 
 (define-term ex1.λ
   ((λ (x) (if x down left)) 42))
