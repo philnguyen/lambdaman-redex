@@ -91,16 +91,20 @@
   [(WITH-TUPLE/gen e (x y ...)) ([x (CAR e)] any ...)
    (where (any ...) (WITH-TUPLE/gen (CDR e) (y ...)))])
 (define-metafunction L
-  list-case : x [(CONS x y) e] [MT e] -> e
-  [(list-case x [(CONS y z) e₁] [MT e₂])
+  LIST-CASE : x [(CONS x y) e] [MT e] -> e
+  [(LIST-CASE x [(CONS y z) e₁] [MT e₂])
    (if (ATOM x) e₂
        (LET ([y (CAR x)]
              [z (CDR x)])
          e₁))])
 (define-metafunction L
-  int-case : x [e e] ... #:else e -> e
-  [(int-case _ #:else e) e]
-  [(int-case x [eₓ e] any ...) (if (CEQ x eₓ) e (int-case x any ...))])
+  INT-CASE : x [e e] ... #:else e -> e
+  [(INT-CASE _ #:else e) e]
+  [(INT-CASE x [eₓ e] any ...) (if (CEQ x eₓ) e (INT-CASE x any ...))])
+(define-metafunction L
+  COND : [e e] ... #:else e -> e
+  [(COND #:else e) e]
+  [(COND [e₁ e₂] any ...) (if e₁ e₂ (COND any ...))])
 
 (define fresh-label!
   (let ([suffix -1])
@@ -112,8 +116,8 @@
 
 ;; Translate closed λ-program into GCC program
 (define-metafunction L
-  T : e -> GCC
-  [(T e) (gcc ... RTN dec ...) (where (gcc ... dec ...) (t () e))])
+  T : e -> (dec ...)
+  [(T e) ((: main gcc ... RTN) dec ...) (where (gcc ... dec ...) (t () e))])
 
 ;; Translate open λ-program with given context to GCC program
 (define-metafunction L
@@ -128,8 +132,8 @@
                     [(Ghost-Starting-Position) 6])])]
   [(t _ n) ([LDC n])]
   [(t ρ x) ([LD n i]) (where (n i) (index-of ρ x))]
-  [(t ρ (o e ...)) (gcc ... o dec ...)
-   (where (gcc ... dec ...) (t* ρ e ...))]
+  [(t ρ (o e ...)) (gcc ... ... o dec ... ...)
+   (where ((gcc ... dec ...) ...) ((t ρ e) ...))]
   [(t ρ (if e₀ e₁ e₂))
    (gcc₀ ... (SEL ℓ₁ ℓ₂) dec₀ ... dec₁ ... dec₂ ... (: ℓ₁ gcc₁ ... JOIN) (: ℓ₂ gcc₂ ... JOIN))
    (where (gcc₀ ... dec₀ ...) (t ρ e₀))
@@ -137,9 +141,9 @@
    (where (gcc₂ ... dec₂ ...) (t ρ e₂))
    (where ℓ₁ ,(fresh-label!))
    (where ℓ₂ ,(fresh-label!))]
-  [(t ρ (e eₓ ...)) (gccₓ ... gcc ... [AP n] dec ... decₓ ...)
+  [(t ρ (e eₓ ...)) (gccₓ ... ... gcc ... [AP n] dec ... decₓ ... ...)
    (where (gcc ... dec ...) (t ρ e))
-   (where (gccₓ ... decₓ ...) (t* ρ eₓ ...))
+   (where ((gccₓ ... decₓ ...) ...) ((t ρ eₓ) ...))
    (where n ,(length (term (eₓ ...))))]
   [(t (any ...) (λ (x ...) e)) ([LDF ℓ] dec ... (: ℓ gcc ... RTN))
    (where (gcc ... dec ...) (t ((x ...) any ...) e))
@@ -154,25 +158,34 @@
    (where (ℓₓ ...) ,(fresh-labels! (term n)))
    (where ℓ ,(fresh-label!))])
 
-;; Translate sequence of (open) λ-programs into GCC program
+;; TC-optimization afterwards. I don't know how to have it by construction
 (define-metafunction L
-  t* : ρ e ... -> GCC
-  [(t* ρ e ...) (gcc ... ... dec ... ...)
-   (where ((gcc ... dec ...) ...) ((t ρ e) ...))])
+  opt : (dec ...) -> (dec ...)
+  [(opt (any_1 ... (: ℓ gcc ... [AP $n] RTN) any_2 ...))
+   (opt (any_1 ... (: ℓ gcc ... [TAP $n]) any_2 ...))
+   (side-condition (not (redex-match? L (_ ... (_ ... [AP _] RTN) _ ...) (term (any_1 ...)))))]
+  [(opt (any_1 ... (: ℓ gcc ... [RAP $n] RTN) any_2 ...))
+   (opt (any_1 ... (: ℓ gcc ... [TRAP $n]) any_2 ...))
+   (side-condition (not (redex-match? L (_ ... (_ ... [RAP _] RTN) _ ...) (term (any_1 ...)))))]
+  [(opt (any_1 ... (: ℓ gcc ... [SEL ℓ₁ ℓ₂] RTN) any_2 ...))
+   (opt (any_5 ... (: ℓ₂ gcc₂ ... RTN) any_6 ...))
+   (where (any_3 ... (: ℓ₁ gcc₁ ... JOIN) any_4 ...)
+          (any_1 ... (: ℓ gcc ... [TSEL ℓ₁ ℓ₂]) any_2 ...))
+   (where (any_5 ... (: ℓ₂ gcc₂ ... JOIN) any_6 ...)
+          (any_3 ... (: ℓ₁ gcc₁ ... RTN) any_4 ...))
+   (side-condition (not (redex-match? L (_ ... (_ ... [SEL _ _] RTN) _ ...) (term (any_1 ...)))))]
+  [(opt any) any])
 
 ;; convert symbolic program to absolute program
 (define-metafunction L
-  ↓ : GCC -> (gcc ...)
-  [(↓ (gcc ... (: ℓ gcc_i ...) ...))
+  ↓ : (dec ...) -> (gcc ...)
+  [(↓ ((: ℓ gcc ...) ...))
    ((↓ᵢ symtab gcc_flattened) ...)
-   (where ((gcc_i_ann ...) ...) (([cmt ℓ] gcc_i ...) ...))
-   (where (gcc_flattened ...) (gcc ... gcc_i_ann ... ...))
-   (where n_0 ,(length (term (gcc ...))))
-   (where (n_i ...) ,(map length (term ((gcc_i ...) ...))))
+   (where ((gcc_ann ...) ...) (([cmt ℓ] gcc ...) ...))
+   (where (gcc_flattened ...) (gcc_ann ... ...))
+   (where (n ...) ,(map length (term ((gcc ...) ...))))
    (where symtab ,(let*-values ([(_ ns)
-                                 (for/fold ([n_acc (term n_0)]
-                                            [n⋯ (list (term n_0))])
-                                           ([li (term (n_i ...))])
+                                 (for/fold ([n_acc 0] [n⋯ (list 0)]) ([li (term (n ...))])
                                    (let ([ni (+ n_acc li)])
                                      (values ni (cons ni n⋯))))])
                     (for/hash ([ℓ (term (ℓ ...))] [i (reverse (rest ns))])
@@ -211,7 +224,9 @@
      #:after-last "\n")])
 
 (define (dump-sym e) (printf (term (fm (T ,e)))))
+(define (dump-sym/opt e) (printf (term (fm (opt (T ,e))))))
 (define (dump e) (printf (term (fm (↓ (T ,e))))))
+(define (dump/opt e) (printf (term (fm (↓ (opt (T ,e)))))))
 
 ;; Example programs
 (define-term local.λ
@@ -227,6 +242,11 @@
              (if n (MUL n (fact (SUB n 1))) 1)))
     (fact 5)))
 
+(define-term fact5.tail.λ
+  (defrec ((def (fact n a)
+             (if n (fact (SUB n 1) (MUL a n)) a)))
+    (fact 5 1)))
+
 (define-term fib5.λ
   (defrec ((def (fib n)
              (if (CGT n 2) (ADD (fib (SUB n 1)) (fib (SUB n 2))) n)))
@@ -238,16 +258,38 @@
           (CONS (ADD AIᵢ 1) down))))
 
 (define-term mine.λ
-  (CONS
-   42
-   (λ (aiᵢ wᵢ)
-     (WITH-TUPLE [wᵢ (map man ghosts fruit)]
-       (WITH-TUPLE [man (man-vitality man-loc man-dir lives score)]
-         (CONS
-          aiᵢ
-          (int-case man-vitality
-            [0 right]
-            #:else left)))))))
+  (defrec ((def (list-ref l i default)
+             (LIST-CASE l
+               [(CONS x y) (if (CEQ i 0) x (list-ref y (SUB i 1)))]
+               [MT default]))
+           (def (table-ref m x y)
+             (list-ref (list-ref m y Wall) x Wall)))
+    (CONS
+     #f
+     (λ (aiᵢ wᵢ)
+       (WITH-TUPLE [wᵢ (map man ghosts fruit)]
+         (WITH-TUPLE [man (man-vitality man-loc man-dir lives score)]
+           (WITH-TUPLE [man-loc (x y)]
+             (CONS
+              #f
+              (LET ([DOWN (table-ref map x (ADD y 1))]
+                    [UP (table-ref map x (SUB y 1))]
+                    [RIGHT (table-ref map (ADD x 1) y)]
+                    [LEFT (table-ref map (SUB x 1) y)])
+                (COND
+                 [(CEQ DOWN Power-Pill) down]
+                 [(CEQ UP Power-Pill) up]
+                 [(CEQ RIGHT Power-Pill) right]
+                 [(CEQ LEFT Power-Pill) left]
+                 [(CEQ DOWN Pill) down]
+                 [(CEQ UP Pill) up]
+                 [(CEQ RIGHT Pill) right]
+                 [(CEQ LEFT Pill) left]
+                 [(CGT DOWN Wall) down]
+                 [(CGT UP Wall) up]
+                 [(CGT RIGHT Wall) right]
+                 [(CGT LEFT Wall) left]
+                 #:else man-dir))))))))))
 
 (define-term ex1.λ
   ((λ (x) (if x down left)) 42))
