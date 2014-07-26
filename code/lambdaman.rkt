@@ -35,6 +35,7 @@
   ;; basic language
   [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e)
                    (defrec ((def (f x ...) e) ...) e)
+                   (set! x e)
                    x n C]
   [o₁ CAR CDR ATOM]
   [o₂ ADD SUB MUL DIV CEQ CGT CGTE CONS]
@@ -108,6 +109,11 @@
   COND : [e e] ... #:else e -> e
   [(COND #:else e) e]
   [(COND [e₁ e₂] any ...) (if e₁ e₂ (COND any ...))])
+(define-metafunction L
+  BEGIN : e e ... -> e
+  [(BEGIN e) e]
+  [(BEGIN eₓ ... e) (LET ([x eₓ] ...) e)
+   (where (x ...) ,(variables-not-in (term e) (make-list (length (term (eₓ ...))) '♥)))])
 
 (define fresh-label!
   (let ([suffix -1])
@@ -158,7 +164,10 @@
    (where n ,(length (term (f ...))))
    (where ℓ ,(fresh-label!))
    (where ((gccₓ ... decₓ ...) ...) ((t ρ (λ (x ...) eₓ)) ...))
-   (where (gcc ... dec ...) (t ρ e))])
+   (where (gcc ... dec ...) (t ρ e))]
+  [(t ρ (set! x e)) (gcc ... [ST n i] [LDC 0] dec ...) ; (set! _) returns 0, to make things compose
+   (where (gcc ... dec ...) (t ρ e))
+   (where (n i) (index-of ρ x))])
 
 ;; TC-optimization afterwards. I don't know how to have it by construction
 (define-metafunction L
