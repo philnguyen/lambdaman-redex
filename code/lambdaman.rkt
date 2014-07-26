@@ -45,7 +45,7 @@
      Wall Empty Pill Power-Pill Fruit-Location Lambda-Man-Starting-Position Ghost-Starting-Position]
   [b boolean]
   [(ρ ρₓ) ((x ...) ...)]
-  [(f x y z) variable-not-otherwise-mentioned]
+  [(f x x₀ x₁ x₂ y z) variable-not-otherwise-mentioned]
   ;;
   [symtab (side-condition (name symtab any) (hash? (term symtab)))])
 
@@ -81,15 +81,18 @@
   [(TUPLE e) e]
   [(TUPLE e₁ e ...) (CONS e₁ (TUPLE e ...))])
 (define-metafunction L
-  WITH-TUPLE : [x (x x ...)] ... e -> e
-  [(WITH-TUPLE [x (y ...)] ... e)
-   (LET (any ... ...) e)
-   (where ((any ...) ...) ((WITH-TUPLE/gen x (y ...)) ...))])
-(define-metafunction L
-  WITH-TUPLE/gen : e (x x ...) -> ([x e] ...)
-  [(WITH-TUPLE/gen e (x)) ([x e])]
-  [(WITH-TUPLE/gen e (x y ...)) ([x (CAR e)] any ...)
-   (where (any ...) (WITH-TUPLE/gen (CDR e) (y ...)))])
+  WITH-TUPLE : x (x x ...) ... e -> e
+  [(WITH-TUPLE _ (•) e) e]
+  [(WITH-TUPLE x (y) e) (LET ([y x]) e)]
+  [(WITH-TUPLE x (• y ...) e)
+   (LET ([x₁ (CDR x)])
+     (WITH-TUPLE x₁ (y ...) e))
+   (where x₁ ,(variable-not-in (term (e y ...)) (term x)))]
+  [(WITH-TUPLE x (z y ...) e)
+   (LET ([z (CAR x)]
+         [x₁ (CDR x)])
+     (WITH-TUPLE x₁ (y ...) e))
+   (where x₁ ,(variable-not-in (term (e z y ...)) (term x)))])
 (define-metafunction L
   LIST-CASE : x [(CONS x y) e] [MT e] -> e
   [(LIST-CASE x [(CONS y z) e₁] [MT e₂])
@@ -257,6 +260,22 @@
         (λ (AIᵢ wᵢ) ; step
           (CONS (ADD AIᵢ 1) down))))
 
+(define-term rev.λ
+  (defrec ((def (rev l a)
+             (LIST-CASE l
+               [(CONS x y) (rev y (CONS x a))]
+               [MT a])))
+    (rev (LIST 1 2 3) 0)))
+
+(define-term rev/foldl.λ
+  (defrec ((def (foldl f x l)
+             (LIST-CASE l
+               [(CONS z zs) (foldl f (f z x) zs)]
+               [MT x]))
+           (def (rev l)
+             (foldl (λ (x y) (CONS x y)) 0 l)))
+    (rev (LIST 1 2 3))))
+
 (define-term mine.λ
   (defrec ((def (list-ref l i default)
              (LIST-CASE l
@@ -267,9 +286,9 @@
     (CONS
      #f
      (λ (aiᵢ wᵢ)
-       (WITH-TUPLE [wᵢ (map man ghosts fruit)]
-         (WITH-TUPLE [man (man-vitality man-loc man-dir lives score)]
-           (WITH-TUPLE [man-loc (x y)]
+       (WITH-TUPLE wᵢ (map man • •)
+         (WITH-TUPLE man (• man-loc man-dir • •)
+           (WITH-TUPLE man-loc (x y)
              (CONS
               #f
               (LET ([DOWN (table-ref map x (ADD y 1))]
