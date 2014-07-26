@@ -3,65 +3,92 @@
 
 (define-language L
   ;; GCC syntax
-  [(gcc gcc₀ gcc₁ gcc₂) (LDC $n)
-                        (LD $n $i)
-                        ADD SUB MUL DIV
-                        CEQ CGT CGTE
-                        ATOM
-                        CONS CAR CDR
-                        (SEL $t $f)
-                        JOIN
-                        (LDF $f)
-                        (AP $n)
-                        RTN
-                        (DUM $n)
-                        (RAP $n)
-                        STOP
-                        ; Tail call extensions
-                        (TSEL $t $f)
-                        (TAP $n)
-                        (TRAP $n)
-                        ; Pascal extensions
-                        (ST $n $i)
-                        ; Debug extensions
-                        DBUG BRK
-                        ; target language comment
-                        (cmt any)]
+  [(gcc gcc₀ gcc₁ gcc₂ gccₓ) (LDC $n)
+                             (LD $n $i)
+                             ADD SUB MUL DIV
+                             CEQ CGT CGTE
+                             ATOM
+                             CONS CAR CDR
+                             (SEL $t $f)
+                             JOIN
+                             (LDF $f)
+                             (AP $n)
+                             RTN
+                             (DUM $n)
+                             (RAP $n)
+                             STOP
+                             ; Tail call extensions
+                             (TSEL $t $f)
+                             (TAP $n)
+                             (TRAP $n)
+                             ; Pascal extensions
+                             (ST $n $i)
+                             ; Debug extensions
+                             DBUG BRK
+                             ; target language comment
+                             (cmt any)]
   [GCC (gcc ... dec ...)]
-  [(dec dec₀ dec₁ dec₂) (: ℓ gcc ...)]
+  [(dec dec₀ dec₁ dec₂ decₓ) (: ℓ gcc ...)]
   [($n $i $t $f) integer ℓ #|FIXME|#]
   [(m n i) integer]
-  [(ℓ ℓ₀ ℓ₁ ℓ₂) variable-not-otherwise-mentioned]
+  [(ℓ ℓ₀ ℓ₁ ℓ₂ ℓₓ) variable-not-otherwise-mentioned]
   ;; basic language
-  [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e) x b n]
+  [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e)
+                   (defrec ((def (f x ...) e) ...) e)
+                   x n C]
   [o₁ CAR CDR ATOM]
   [o₂ ADD SUB MUL DIV CEQ CGT CGTE CONS]
   [o o₁ o₂]
+  [C b
+     standard fright-mode invisible
+     up right down left]
   [b boolean]
-  [ρ ((x ...) ...)]
-  [(x y z) variable-not-otherwise-mentioned]
+  [(ρ ρₓ) ((x ...) ...)]
+  [(f x y z) variable-not-otherwise-mentioned]
   ;;
   [symtab (side-condition (name symtab any) (hash? (term symtab)))])
 
-;; syntactic sugar
+;; Macros
 (define-metafunction L
   LET : ([x e] ...) e -> e
   [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)])
+(define-metafunction L
+  LET* : ([x e] ...) e -> e
+  [(LET* () e) e]
+  [(LET* ([x eₓ] any ...) e) (LET ([x eₓ]) (LET* (any ...) e))])
+;; Non-standard + must be int
+(define-metafunction L
+  AND : e ... -> e
+  [(AND) #t]
+  [(AND e) e]
+  [(AND e₁ e ...) (if e₁ (AND e ...) #f)])
+(define-metafunction L
+  OR : e ... -> e
+  [(OR) #f]
+  [(OR e) e]
+  [(OR e₁ e ...) (if e₁ #t (OR e ...))])
 
 (define fresh-label!
   (let ([suffix -1])
     (λ ()
       (set! suffix (+ 1 suffix))
-      (string->symbol (format "ℓ~a" suffix)))))
+      (string->symbol (format "lab~a" suffix)))))
+(define (fresh-labels! n)
+  (for/list ([_ (in-range 0 n)]) (fresh-label!)))
 
+;; Translate closed λ-program into GCC program
 (define-metafunction L
   T : e -> GCC
-  [(T e) (t () e)])
+  [(T e) (gcc ... RTN dec ...) (where (gcc ... dec ...) (t () e))])
 
+;; Translate open λ-program with given context to GCC program
 (define-metafunction L
   t : ρ e -> GCC
-  [(t _ #t) ([LDC 1])]
-  [(t _ #f) ([LDC 0])]
+  [(t _ C) ([LDC ,(case (term C)
+                    [(#f standard up) 0]
+                    [(#t fright-mode right) 1]
+                    [(invisible down) 2]
+                    [(left) 3])])]
   [(t _ n) ([LDC n])]
   [(t ρ x) ([LD n i]) (where (n i) (index-of ρ x))]
   [(t ρ (o e ...)) (gcc ... o dec ...)
@@ -73,14 +100,24 @@
    (where (gcc₂ ... dec₂ ...) (t ρ e₂))
    (where ℓ₁ ,(fresh-label!))
    (where ℓ₂ ,(fresh-label!))]
-  [(t ρ (e eₓ ...)) (gcc_1 ... gcc_i ... [AP n] RTN dec_1 ... dec_i ...)
-   (where (gcc_1 ... dec_1 ...) (t ρ e))
-   (where (gcc_i ... dec_i ...) (t* ρ eₓ ...))
+  [(t ρ (e eₓ ...)) (gccₓ ... gcc ... [AP n] dec ... decₓ ...)
+   (where (gcc ... dec ...) (t ρ e))
+   (where (gccₓ ... decₓ ...) (t* ρ eₓ ...))
    (where n ,(length (term (eₓ ...))))]
-  [(t (any ...) (λ (x ...) e)) ([LDF ℓ] dec ... (: ℓ gcc ...))
+  [(t (any ...) (λ (x ...) e)) ([LDF ℓ] dec ... (: ℓ gcc ... RTN))
    (where (gcc ... dec ...) (t ((x ...) any ...) e))
+   (where ℓ ,(fresh-label!))]
+  [(t (any ...) (defrec ((def (f x ...) eₓ) ...) e))
+   ([DUM n] gccₓ ... ... [LDF ℓ] [RAP n]
+    decₓ ... ... dec ... (: ℓ gcc ... RTN))
+   (where ρ ((f ...) any ...))
+   (where ((gccₓ ... decₓ ...) ...) ((t ρ (λ (x ...) eₓ)) ...))
+   (where (gcc ... dec ...) (t ρ e))
+   (where n ,(length (term (f ...))))
+   (where (ℓₓ ...) ,(fresh-labels! (term n)))
    (where ℓ ,(fresh-label!))])
 
+;; Translate sequence of (open) λ-programs into GCC program
 (define-metafunction L
   t* : ρ e ... -> GCC
   [(t* ρ e ...) (gcc ... ... dec ... ...)
@@ -140,11 +177,21 @@
 (define (dump e) (printf (term (fm (↓ (T ,e))))))
 
 ;; Example programs
-(define-term ex1
+(define-term local.λ
   ((λ (x) (ADD x x)) 21))
 
-(define-term ex2
-  ((λ (x) (if x 2 3)) 42))
+(define-term goto.λ
+  (defrec ((def (go n) (to (ADD n 1)))
+           (def (to n) (go (SUB n 1))))
+    (go 1)))
 
-(define-term ex3
+(define-term always-down.λ
+  (CONS 42
+        (λ (AIᵢ wᵢ) ; step
+          (CONS (ADD AIᵢ 1) down))))
+
+(define-term ex1.λ
+  ((λ (x) (if x down left)) 42))
+
+(define-term ex2.λ
   (LET ([x 1] [y 2]) (MUL x y)))
