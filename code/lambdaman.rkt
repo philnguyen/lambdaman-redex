@@ -67,6 +67,18 @@
   [(OR) #f]
   [(OR e) e]
   [(OR e₁ e ...) (if e₁ #t (OR e ...))])
+(define-metafunction L
+  NTH : e n -> e
+  [(NTH e 0) (CAR e)]
+  [(NTH e n) (NTH (CDR e) ,(- (term n) 1))])
+(define-metafunction L
+  LIST : e ... -> e
+  [(LIST) 0]
+  [(LIST e₁ e ...) (CONS e₁ (LIST e ...))])
+(define-metafunction L
+  TUPLE : e e ... -> e
+  [(TUPLE e) e]
+  [(TUPLE e₁ e ...) (CONS e₁ (TUPLE e ...))])
 
 (define fresh-label!
   (let ([suffix -1])
@@ -184,6 +196,16 @@
   (defrec ((def (go n) (to (ADD n 1)))
            (def (to n) (go (SUB n 1))))
     (go 1)))
+
+(define-term fact5.λ
+  (defrec ((def (fact n)
+             (if n (MUL n (fact (SUB n 1))) 1)))
+    (fact 5)))
+
+(define-term fib5.λ
+  (defrec ((def (fib n)
+             (if (CGT n 2) (ADD (fib (SUB n 1)) (fib (SUB n 2))) n)))
+    (fib 5)))
 
 (define-term always-down.λ
   (CONS 42
