@@ -138,28 +138,27 @@
   [(t ρ (o e ...)) (gcc ... ... o dec ... ...)
    (where ((gcc ... dec ...) ...) ((t ρ e) ...))]
   [(t ρ (if e₀ e₁ e₂))
-   (gcc₀ ... (SEL ℓ₁ ℓ₂) dec₀ ... dec₁ ... dec₂ ... (: ℓ₁ gcc₁ ... JOIN) (: ℓ₂ gcc₂ ... JOIN))
+   (gcc₀ ... (SEL ℓ₁ ℓ₂) (: ℓ₁ gcc₁ ... JOIN) (: ℓ₂ gcc₂ ... JOIN) dec₀ ... dec₁ ... dec₂ ...)
+   (where ℓ₁ ,(fresh-label!))
+   (where ℓ₂ ,(fresh-label!))
    (where (gcc₀ ... dec₀ ...) (t ρ e₀))
    (where (gcc₁ ... dec₁ ...) (t ρ e₁))
-   (where (gcc₂ ... dec₂ ...) (t ρ e₂))
-   (where ℓ₁ ,(fresh-label!))
-   (where ℓ₂ ,(fresh-label!))]
+   (where (gcc₂ ... dec₂ ...) (t ρ e₂))]
   [(t ρ (e eₓ ...)) (gccₓ ... ... gcc ... [AP n] dec ... decₓ ... ...)
    (where (gcc ... dec ...) (t ρ e))
    (where ((gccₓ ... decₓ ...) ...) ((t ρ eₓ) ...))
    (where n ,(length (term (eₓ ...))))]
-  [(t (any ...) (λ (x ...) e)) ([LDF ℓ] dec ... (: ℓ gcc ... RTN))
-   (where (gcc ... dec ...) (t ((x ...) any ...) e))
-   (where ℓ ,(fresh-label!))]
+  [(t (any ...) (λ (x ...) e)) ([LDF ℓ] (: ℓ gcc ... RTN) dec ...)
+   (where ℓ ,(fresh-label!))
+   (where (gcc ... dec ...) (t ((x ...) any ...) e))]
   [(t (any ...) (defrec ((def (f x ...) eₓ) ...) e))
    ([DUM n] gccₓ ... ... [LDF ℓ] [RAP n]
-    decₓ ... ... dec ... (: ℓ gcc ... RTN))
+    (: ℓ gcc ... RTN) decₓ ... ... dec ...)
    (where ρ ((f ...) any ...))
-   (where ((gccₓ ... decₓ ...) ...) ((t ρ (λ (x ...) eₓ)) ...))
-   (where (gcc ... dec ...) (t ρ e))
    (where n ,(length (term (f ...))))
-   (where (ℓₓ ...) ,(fresh-labels! (term n)))
-   (where ℓ ,(fresh-label!))])
+   (where ℓ ,(fresh-label!))
+   (where ((gccₓ ... decₓ ...) ...) ((t ρ (λ (x ...) eₓ)) ...))
+   (where (gcc ... dec ...) (t ρ e))])
 
 ;; TC-optimization afterwards. I don't know how to have it by construction
 (define-metafunction L
