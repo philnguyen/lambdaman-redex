@@ -26,7 +26,7 @@
                         ; Debug extensions
                         DBUG BRK
                         ; target language comment
-                        (cmt string)]
+                        (cmt any)]
   [GCC (gcc ... dec ...)]
   [(dec dec₀ dec₁ dec₂) (: ℓ gcc ...)]
   [($n $i $t $f) integer ℓ #|FIXME|#]
@@ -91,7 +91,8 @@
   ↓ : GCC -> (gcc ...)
   [(↓ (gcc ... (: ℓ gcc_i ...) ...))
    ((↓ᵢ symtab gcc_flattened) ...)
-   (where (gcc_flattened ...) (gcc ... gcc_i ... ...))
+   (where ((gcc_i_ann ...) ...) (([cmt ℓ] gcc_i ...) ...))
+   (where (gcc_flattened ...) (gcc ... gcc_i_ann ... ...))
    (where n_0 ,(length (term (gcc ...))))
    (where (n_i ...) ,(map length (term ((gcc_i ...) ...))))
    (where symtab ,(let*-values ([(_ ns)
@@ -110,6 +111,8 @@
   [(symtab@ symtab ℓ) ,(hash-ref (term symtab) (term ℓ))])
 (define-metafunction L
   ↓ᵢ : symtab gcc -> gcc
+  [(↓ᵢ symtab (cmt ℓ)) (cmt ,(format "~a @ ~a" (term ℓ) (hash-ref (term symtab) (term ℓ))))]
+  [(↓ᵢ _ (name gcc (cmt _))) gcc]
   [(↓ᵢ symtab (any $n ...)) (any (symtab@ symtab $n) ...)]
   [(↓ᵢ _ gcc) gcc])
 
@@ -127,6 +130,7 @@
      (for/list ([i (append (term (gcc ...)) (apply append (term (((: ℓ) gcc_ℓ ...) ...))))])
        (match i
          [`(: ,ℓ) (format "~a:" ℓ)]
+         [`(cmt ,s) (format "; ~a:" s)]
          [(? list? l) (string-join (for/list ([x l]) (format "~a" x)) " " #:before-first "  ")]
          [x (format "  ~a" x)]))
      "\n"
