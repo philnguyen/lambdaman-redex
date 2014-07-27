@@ -31,8 +31,9 @@
   ;; basic language
   [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e)
                    (defrec ((def (f x ...) e) ...) e)
-                   (set! x e)
+                   (set! x! e)
                    (with-constants (C ...) e)
+                   (dbg e)
                    X n]
   [C (X n) (enum: X ...)]
   [(X Y Z) x b]
@@ -42,14 +43,16 @@
   [o o₁ o₂]
   [(ρ ρₓ) ((x ...) ...)]
   [(f x x₀ x₁ x₂ y y₀ y₁ y₂ z) variable-not-otherwise-mentioned]
+  [•x (side-condition (name •x x) (regexp-match? #rx"•.*" (symbol->string (term •x))))]
+  [x! (side-condition
+       (name x! x)
+       (match (symbol->string (term x!))
+         [(regexp #rx".*!") #t]
+         [_ (begin0 #f
+              (printf "Mutable variable ~a must be suffixed with !~n" (term x!)))]))]
+  [B (x e) ((tuple: x ...) x)] ; let-binding clause
   ;;
   [symtab (side-condition (name symtab any) (hash? (term symtab)))])
-
-;; Check for special "don't care" variables used in pattern matching
-(define (•? x)
-  (match (symbol->string x)
-    [(regexp #rx"•.*") #t]
-    [_ #f]))
 
 ;; Macros
 (define-metafunction L
@@ -58,10 +61,12 @@
   [(ADD* e) e]
   [(ADD* e₁ e₂ e ...) (ADD* (ADD e₁ e₂) e ...)])
 (define-metafunction L
-  LET : ([x e] ...) e -> e
-  [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)])
+  LET : (B ...) e -> e
+  [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)]
+  [(LET ([x e_x] ... [(tuple: y ...) z] any ...) e)
+   (LET ([x e_x] ...) (WITH-TUPLE z (y ...) (LET (any ...) e)))])
 (define-metafunction L
-  LET* : ([x e] ...) e -> e
+  LET* : (B ...) e -> e
   [(LET* () e) e]
   [(LET* (any_1 any ...) e) (LET (any_1) (LET* (any ...) e))])
 ;; Non-standard + must be int
@@ -84,23 +89,17 @@
   [(TUPLE e) e]
   [(TUPLE e₁ e ...) (CONS e₁ (TUPLE e ...))])
 (define-metafunction L
-  WITH-TUPLE : ([x (x x ...)]) e -> e
-  [(WITH-TUPLE _ (y) e) e (side-condition (•? (term y)))]
+  WITH-TUPLE : x (x x ...) e -> e
+  [(WITH-TUPLE _ (•x) e) e]
   [(WITH-TUPLE x (y) e) (LET ([y x]) e)]
-  [(WITH-TUPLE x (y₁ y ...) e)
-   (LET ([x₁ (CDR x)])
-     (WITH-TUPLE x₁ (y ...) e))
-   (side-condition (•? (term y₁)))
+  [(WITH-TUPLE x (•x y ...) e)
+   (LET ([x₁ (CDR x)]) (WITH-TUPLE x₁ (y ...) e))
    (where x₁ ,(variable-not-in (term (e y ...)) (term x)))]
   [(WITH-TUPLE x (z y ...) e)
    (LET ([z (CAR x)]
          [x₁ (CDR x)])
      (WITH-TUPLE x₁ (y ...) e))
    (where x₁ ,(variable-not-in (term (e z y ...)) (term x)))])
-(define-metafunction L
-  WITH-TUPLE* : ([x (x x ...)] ...) e -> e
-  [(WITH-TUPLE* () e) e]
-  [(WITH-TUPLE* (any_1 any ...) e) (WITH-TUPLE (any_1) (WITH-TUPLE* (any ...) e))])
 (define-metafunction L
   LIST-CASE : x [(CONS x y) e] [MT e] -> e
   [(LIST-CASE x [(CONS y z) e₁] [MT e₂])
@@ -116,6 +115,12 @@
   COND : [e e] ... #:else e -> e
   [(COND #:else e) e]
   [(COND [e₁ e₂] any ...) (if e₁ e₂ (COND any ...))])
+(define-metafunction L
+  WHEN : e e -> e
+  [(WHEN e e₁) (if e e₁ 0)])
+(define-metafunction L
+  UNLESS : e e -> e
+  [(UNLESS e e₁) (if e 0 e₁)])
 (define-metafunction L
   BEGIN : e e ... -> e
   [(BEGIN e) e]
@@ -134,13 +139,15 @@
 (define (fresh-labels! n)
   (for/list ([_ (in-range 0 n)]) (fresh-label!)))
 
+(define free-vars (make-parameter '()))
 ;; Translate closed λ-program into GCC program
 (define-metafunction L
   T : e -> (dec ...)
-  [(T e) ((: main gcc ... RTN) dec ...) (where (gcc ... dec ...) (t () e))])
+  [(T e) ((: main gcc ... RTN) dec ...) (where (gcc ... dec ...) (t ,(free-vars) e))])
 
 ;; Translate open λ-program with given context to GCC program
 (define consts (make-parameter (hash)))
+(define arities (make-parameter (hash)))
 (define-metafunction L
   t : ρ e -> GCC
   ; Source-level optimization
@@ -163,7 +170,13 @@
   [(t ρ (e eₓ ...)) (gccₓ ... ... gcc ... [AP n] dec ... decₓ ... ...)
    (where (gcc ... dec ...) (t ρ e))
    (where ((gccₓ ... decₓ ...) ...) ((t ρ eₓ) ...))
-   (where n ,(length (term (eₓ ...))))]
+   (where n ,(length (term (eₓ ...))))
+   (side-condition
+    (match (hash-ref (arities) (term e) #f)
+      [#f #t]
+      [n (unless (equal? n (length (term (eₓ ...))))
+           (error (format "Function ~a expects ~a arguments, given ~a: ~a"
+                          (term e) n (length (term (eₓ ...))) (term (eₓ ...)))))]))]
   [(t (any ...) (λ (x ...) e)) ([LDF ℓ] (: ℓ gcc ... RTN) dec ...)
    (side-condition (or (for/first ([x (term (x ...))] #:when (hash-has-key? (consts) x))
                          (error (format "Variable ~a shadows a constant" x)))
@@ -173,11 +186,20 @@
   [(t (any ...) (defrec ((def (f x ...) eₓ) ...) e))
    ([DUM n] gccₓ ... ... [LDF ℓ] [RAP n]
     (: ℓ gcc ... RTN) decₓ ... ... dec ...)
+   (where any_arities
+          ,(for/fold ([m (arities)]) ([f (term (f ...))]
+                                      [n (map length (term ((x ...) ...)))])
+             (hash-set m f n)))
    (where ρ ((f ...) any ...))
    (where n ,(length (term (f ...))))
    (where ℓ ,(fresh-label!))
-   (where ((gccₓ ... decₓ ...) ...) ((t ρ (λ (x ...) eₓ)) ...))
-   (where (gcc ... dec ...) (t ρ e))]
+   (where ((gccₓ ... decₓ ...) ...)
+          ,(for/list ([e (term ((λ (x ...) eₓ) ...))])
+             (parameterize ([arities (term any_arities)])
+               (term (t ρ ,e)))))
+   (where (gcc ... dec ...)
+          ,(parameterize ([arities (term any_arities)])
+             (term (t ρ e))))]
   [(t ρ (set! x e)) (gcc ... [ST n i] [LDC 0] dec ...) ; (set! _) returns 0, to make things compose
    (where (gcc ... dec ...) (t ρ e))
    (where (n i) (index-of ρ x))]
@@ -187,17 +209,14 @@
   [(t ρ (with-constants ([X n] ...) e))
    ,(parameterize ([consts (for/fold ([m (consts)]) ([X (term (X ...))] [n (term (n ...))])
                              (hash-set m X n))])
-      (term (t ρ e)))])
+      (term (t ρ e)))]
+  [(t ρ (dbg e)) (gcc ... DBUG [LDC 0] dec ...)
+   (where (gcc ... dec ...) (t ρ e))])
 
 ;; TC-optimization afterwards. I don't know how to have it by construction
+;; FIXME: This function is the bottle neck
 (define-metafunction L
   opt : (dec ...) -> (dec ...)
-  [(opt (any_1 ... (: ℓ gcc ... [AP $n] RTN) any_2 ...))
-   (opt (any_1 ... (: ℓ gcc ... [TAP $n]) any_2 ...))
-   (side-condition (not (redex-match? L (_ ... (_ ... [AP _] RTN) _ ...) (term (any_1 ...)))))]
-  [(opt (any_1 ... (: ℓ gcc ... [RAP $n] RTN) any_2 ...))
-   (opt (any_1 ... (: ℓ gcc ... [TRAP $n]) any_2 ...))
-   (side-condition (not (redex-match? L (_ ... (_ ... [RAP _] RTN) _ ...) (term (any_1 ...)))))]
   [(opt (any_1 ... (: ℓ gcc ... [SEL ℓ₁ ℓ₂] RTN) any_2 ...))
    (opt (any_5 ... (: ℓ₂ gcc₂ ... RTN) any_6 ...))
    (where (any_3 ... (: ℓ₁ gcc₁ ... JOIN) any_4 ...)
@@ -205,6 +224,12 @@
    (where (any_5 ... (: ℓ₂ gcc₂ ... JOIN) any_6 ...)
           (any_3 ... (: ℓ₁ gcc₁ ... RTN) any_4 ...))
    (side-condition (not (redex-match? L (_ ... (_ ... [SEL _ _] RTN) _ ...) (term (any_1 ...)))))]
+  [(opt (any_1 ... (: ℓ gcc ... [AP $n] RTN) any_2 ...))
+   (opt (any_1 ... (: ℓ gcc ... [TAP $n]) any_2 ...))
+   (side-condition (not (redex-match? L (_ ... (_ ... [AP _] RTN) _ ...) (term (any_1 ...)))))]
+  [(opt (any_1 ... (: ℓ gcc ... [RAP $n] RTN) any_2 ...))
+   (opt (any_1 ... (: ℓ gcc ... [TRAP $n]) any_2 ...))
+   (side-condition (not (redex-match? L (_ ... (_ ... [RAP _] RTN) _ ...) (term (any_1 ...)))))]
   [(opt any) any])
 
 ;; convert symbolic program to absolute program
