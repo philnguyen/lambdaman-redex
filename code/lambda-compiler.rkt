@@ -41,9 +41,15 @@
   [o₂ ADD SUB MUL DIV CEQ CGT CGTE CONS]
   [o o₁ o₂]
   [(ρ ρₓ) ((x ...) ...)]
-  [(f x x₀ x₁ x₂ y z) variable-not-otherwise-mentioned]
+  [(f x x₀ x₁ x₂ y y₀ y₁ y₂ z) variable-not-otherwise-mentioned]
   ;;
   [symtab (side-condition (name symtab any) (hash? (term symtab)))])
+
+;; Check for special "don't care" variables used in pattern matching
+(define (•? x)
+  (match (symbol->string x)
+    [(regexp #rx"•.*") #t]
+    [_ #f]))
 
 ;; Macros
 (define-metafunction L
@@ -57,7 +63,7 @@
 (define-metafunction L
   LET* : ([x e] ...) e -> e
   [(LET* () e) e]
-  [(LET* ([x eₓ] any ...) e) (LET ([x eₓ]) (LET* (any ...) e))])
+  [(LET* (any_1 any ...) e) (LET (any_1) (LET* (any ...) e))])
 ;; Non-standard + must be int
 (define-metafunction L
   AND : e ... -> e
@@ -70,10 +76,6 @@
   [(OR e) e]
   [(OR e₁ e ...) (if e₁ #t (OR e ...))])
 (define-metafunction L
-  NTH : e n -> e
-  [(NTH e 0) (CAR e)]
-  [(NTH e n) (NTH (CDR e) ,(- (term n) 1))])
-(define-metafunction L
   LIST : e ... -> e
   [(LIST) 0]
   [(LIST e₁ e ...) (CONS e₁ (LIST e ...))])
@@ -82,18 +84,23 @@
   [(TUPLE e) e]
   [(TUPLE e₁ e ...) (CONS e₁ (TUPLE e ...))])
 (define-metafunction L
-  WITH-TUPLE : x (x x ...) ... e -> e
-  [(WITH-TUPLE _ (•) e) e]
+  WITH-TUPLE : ([x (x x ...)]) e -> e
+  [(WITH-TUPLE _ (y) e) e (side-condition (•? (term y)))]
   [(WITH-TUPLE x (y) e) (LET ([y x]) e)]
-  [(WITH-TUPLE x (• y ...) e)
+  [(WITH-TUPLE x (y₁ y ...) e)
    (LET ([x₁ (CDR x)])
      (WITH-TUPLE x₁ (y ...) e))
+   (side-condition (•? (term y₁)))
    (where x₁ ,(variable-not-in (term (e y ...)) (term x)))]
   [(WITH-TUPLE x (z y ...) e)
    (LET ([z (CAR x)]
          [x₁ (CDR x)])
      (WITH-TUPLE x₁ (y ...) e))
    (where x₁ ,(variable-not-in (term (e z y ...)) (term x)))])
+(define-metafunction L
+  WITH-TUPLE* : ([x (x x ...)] ...) e -> e
+  [(WITH-TUPLE* () e) e]
+  [(WITH-TUPLE* (any_1 any ...) e) (WITH-TUPLE (any_1) (WITH-TUPLE* (any ...) e))])
 (define-metafunction L
   LIST-CASE : x [(CONS x y) e] [MT e] -> e
   [(LIST-CASE x [(CONS y z) e₁] [MT e₂])
