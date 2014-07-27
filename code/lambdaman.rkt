@@ -28,6 +28,7 @@
                              ; target language comment
                              (cmt any)]
   [GCC (gcc ... dec ...)]
+  [gcc* (side-condition (name gcc* (gcc ...)) (<= (length (term gcc*)) 1048576))]
   [(dec dec₀ dec₁ dec₂ decₓ) (: ℓ gcc ...)]
   [($n $i $t $f) integer ℓ #|FIXME|#]
   [(m n i) integer]
@@ -36,15 +37,14 @@
   [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e)
                    (defrec ((def (f x ...) e) ...) e)
                    (set! x e)
-                   x n C]
+                   (with-constants (C ...) e)
+                   X n]
+  [C (X n) (enum: X ...)]
+  [(X Y Z) x b]
+  [b boolean]
   [o₁ CAR CDR ATOM]
   [o₂ ADD SUB MUL DIV CEQ CGT CGTE CONS]
   [o o₁ o₂]
-  [C b
-     standard fright-mode invisible
-     up right down left
-     Wall Empty Pill Power-Pill Fruit-Location Lambda-Man-Starting-Position Ghost-Starting-Position]
-  [b boolean]
   [(ρ ρₓ) ((x ...) ...)]
   [(f x x₀ x₁ x₂ y z) variable-not-otherwise-mentioned]
   ;;
@@ -114,6 +114,9 @@
   [(BEGIN e) e]
   [(BEGIN eₓ ... e) (LET ([x eₓ] ...) e)
    (where (x ...) ,(variables-not-in (term e) (make-list (length (term (eₓ ...))) '♥)))])
+(define-metafunction L
+  enumerate : X ... -> ([X n] ...)
+  [(enumerate X ...) ,(for/list ([X (term (X ...))] [i (in-naturals)]) `(,X ,i))])
 
 (define fresh-label!
   (let ([suffix -1])
@@ -129,17 +132,12 @@
   [(T e) ((: main gcc ... RTN) dec ...) (where (gcc ... dec ...) (t () e))])
 
 ;; Translate open λ-program with given context to GCC program
+(define consts (make-parameter (hash)))
 (define-metafunction L
   t : ρ e -> GCC
-  [(t _ C) ([LDC ,(case (term C)
-                    [(#f standard up Wall) 0]
-                    [(#t fright-mode right Empty) 1]
-                    [(invisible down Pill) 2]
-                    [(left Power-Pill) 3]
-                    [(Fruit-Location) 4]
-                    [(Lambda-Man-Starting-Position) 5]
-                    [(Ghost-Starting-Position) 6])])]
   [(t _ n) ([LDC n])]
+  [(t _ X) ([LDC n])
+   (where n ,(hash-ref (consts) (term X) #f))]
   [(t ρ x) ([LD n i]) (where (n i) (index-of ρ x))]
   [(t ρ (o e ...)) (gcc ... ... o dec ... ...)
    (where ((gcc ... dec ...) ...) ((t ρ e) ...))]
@@ -155,6 +153,9 @@
    (where ((gccₓ ... decₓ ...) ...) ((t ρ eₓ) ...))
    (where n ,(length (term (eₓ ...))))]
   [(t (any ...) (λ (x ...) e)) ([LDF ℓ] (: ℓ gcc ... RTN) dec ...)
+   (side-condition (or (for/first ([x (term (x ...))] #:when (hash-has-key? (consts) x))
+                         (error (format "Variable ~a shadows a constant" x)))
+                       #t))
    (where ℓ ,(fresh-label!))
    (where (gcc ... dec ...) (t ((x ...) any ...) e))]
   [(t (any ...) (defrec ((def (f x ...) eₓ) ...) e))
@@ -167,7 +168,14 @@
    (where (gcc ... dec ...) (t ρ e))]
   [(t ρ (set! x e)) (gcc ... [ST n i] [LDC 0] dec ...) ; (set! _) returns 0, to make things compose
    (where (gcc ... dec ...) (t ρ e))
-   (where (n i) (index-of ρ x))])
+   (where (n i) (index-of ρ x))]
+  [(t ρ (with-constants ([X n] ... (enum: Y ...) any ...) e))
+   (t ρ (with-constants ([X n] ... [Y m] ... any ...) e))
+   (where ([Y m] ...) (enumerate Y ...))]
+  [(t ρ (with-constants ([X n] ...) e))
+   ,(parameterize ([consts (for/fold ([m (consts)]) ([X (term (X ...))] [n (term (n ...))])
+                             (hash-set m X n))])
+      (term (t ρ e)))])
 
 ;; TC-optimization afterwards. I don't know how to have it by construction
 (define-metafunction L
@@ -189,9 +197,9 @@
 
 ;; convert symbolic program to absolute program
 (define-metafunction L
-  ↓ : (dec ...) -> (gcc ...)
-  [(↓ ((: ℓ gcc ...) ...))
-   ((↓ᵢ symtab gcc_flattened) ...)
+  || : (dec ...) -> gcc*
+  [(|| ((: ℓ gcc ...) ...))
+   ((||ᵢ symtab gcc_flattened) ...)
    (where ((gcc_ann ...) ...) (([cmt ℓ] gcc ...) ...))
    (where (gcc_flattened ...) (gcc_ann ... ...))
    (where (n ...) ,(map length (term ((gcc ...) ...))))
@@ -208,18 +216,18 @@
   [(symtab@ _ n) n]
   [(symtab@ symtab ℓ) ,(hash-ref (term symtab) (term ℓ))])
 (define-metafunction L
-  ↓ᵢ : symtab gcc -> gcc
-  [(↓ᵢ symtab (cmt ℓ)) (cmt ,(format "~a @ ~a" (term ℓ) (hash-ref (term symtab) (term ℓ))))]
-  [(↓ᵢ _ (name gcc (cmt _))) gcc]
-  [(↓ᵢ symtab (any $n ...)) (any (symtab@ symtab $n) ...)]
-  [(↓ᵢ _ gcc) gcc])
+  ||ᵢ : symtab gcc -> gcc
+  [(||ᵢ symtab (cmt ℓ)) (cmt ,(format "~a @ ~a" (term ℓ) (hash-ref (term symtab) (term ℓ))))]
+  [(||ᵢ _ (name gcc (cmt _))) gcc]
+  [(||ᵢ symtab (any $n ...)) (any (symtab@ symtab $n) ...)]
+  [(||ᵢ _ gcc) gcc])
 
 (define-metafunction L
   index-of : ρ x -> (n i)
   [(index-of ((y ...) ... (z ... x _ ...) _ ...) x)
    (,(length (term ((y ...) ...))) ,(length (term (z ...))))
    (side-condition (not (member (term x) (term (y ... ...)))))]
-  [(index-of ρ x) ,(error (format "variable ~a not found in context ~a" (term x) (term ρ)))])
+  [(index-of ρ x) ,(error (format "Variable ~a not found in context ~a" (term x) (term ρ)))])
 
 (define-metafunction L
   fm : GCC -> string
@@ -236,8 +244,8 @@
 
 (define (dump-sym e) (printf (term (fm (T ,e)))))
 (define (dump-sym/opt e) (printf (term (fm (opt (T ,e))))))
-(define (dump e) (printf (term (fm (↓ (T ,e))))))
-(define (dump/opt e) (printf (term (fm (↓ (opt (T ,e)))))))
+(define (dump e) (printf (term (fm (|| (T ,e))))))
+(define (dump/opt e) (printf (term (fm (|| (opt (T ,e)))))))
 
 ;; Example programs
 (define-term local.λ
@@ -285,12 +293,17 @@
     (rev (LIST 1 2 3))))
 
 (define-term mine.λ
-  (defrec ((def (list-ref l i default)
-             (LIST-CASE l
-               [(CONS x y) (if (CEQ i 0) x (list-ref y (SUB i 1)))]
-               [MT default]))
-           (def (table-ref m x y)
-             (list-ref (list-ref m y Wall) x Wall)))
+  (with-constants ([enum: #f #t]
+                   [enum: Wall Empty Pill Power-Pill Fruit Λ-Man-Start Ghost-Start]
+                   [enum: Standard Fright-Mode Invisible]
+                   [enum: ↑ → ↓ ←])
+    (defrec ((def (list-ref l i default)
+               (LIST-CASE l
+                 [(CONS x y) (if (CEQ i 0) x (list-ref y (SUB i 1)))]
+                 [MT default]))
+             (def (table-ref m x y)
+               (list-ref (list-ref m y Wall) x Wall))
+             )
     (CONS
      #f
      (λ (aiᵢ wᵢ)
@@ -304,19 +317,19 @@
                     [RIGHT (table-ref map (ADD x 1) y)]
                     [LEFT (table-ref map (SUB x 1) y)])
                 (COND
-                 [(CEQ DOWN Power-Pill) down]
-                 [(CEQ UP Power-Pill) up]
-                 [(CEQ RIGHT Power-Pill) right]
-                 [(CEQ LEFT Power-Pill) left]
-                 [(CEQ DOWN Pill) down]
-                 [(CEQ UP Pill) up]
-                 [(CEQ RIGHT Pill) right]
-                 [(CEQ LEFT Pill) left]
-                 [(CGT DOWN Wall) down]
-                 [(CGT UP Wall) up]
-                 [(CGT RIGHT Wall) right]
-                 [(CGT LEFT Wall) left]
-                 #:else man-dir))))))))))
+                 [(CEQ DOWN Power-Pill) ↓]
+                 [(CEQ UP Power-Pill) ↑]
+                 [(CEQ RIGHT Power-Pill) →]
+                 [(CEQ LEFT Power-Pill) ←]
+                 [(CEQ DOWN Pill) ↓]
+                 [(CEQ UP Pill) ↑]
+                 [(CEQ RIGHT Pill) →]
+                 [(CEQ LEFT Pill) ←]
+                 [(CGT DOWN Wall) ↓]
+                 [(CGT UP Wall) ↑]
+                 [(CGT RIGHT Wall) →]
+                 [(CGT LEFT Wall) ←]
+                 #:else man-dir)))))))))))
 
 (define-term ex1.λ
   ((λ (x) (if x down left)) 42))
