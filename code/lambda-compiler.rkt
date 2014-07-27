@@ -1,4 +1,5 @@
 #lang racket/base
+(provide (all-defined-out))
 (require racket/match racket/string racket/list redex/reduction-semantics)
 
 (define-language L
@@ -9,18 +10,12 @@
                              CEQ CGT CGTE
                              ATOM
                              CONS CAR CDR
-                             (SEL $t $f)
-                             JOIN
-                             (LDF $f)
-                             (AP $n)
-                             RTN
-                             (DUM $n)
-                             (RAP $n)
+                             (SEL $t $f) JOIN
+                             (LDF $f) (AP $n) RTN
+                             (DUM $n) (RAP $n)
                              STOP
                              ; Tail call extensions
-                             (TSEL $t $f)
-                             (TAP $n)
-                             (TRAP $n)
+                             (TSEL $t $f) (TAP $n) (TRAP $n)
                              ; Pascal extensions
                              (ST $n $i)
                              ; Debug extensions
@@ -51,6 +46,11 @@
   [symtab (side-condition (name symtab any) (hash? (term symtab)))])
 
 ;; Macros
+(define-metafunction L
+  ADD* : e ... -> e
+  [(ADD*) 0]
+  [(ADD* e) e]
+  [(ADD* e₁ e₂ e ...) (ADD* (ADD e₁ e₂) e ...)])
 (define-metafunction L
   LET : ([x e] ...) e -> e
   [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)])
@@ -118,6 +118,7 @@
   enumerate : X ... -> ([X n] ...)
   [(enumerate X ...) ,(for/list ([X (term (X ...))] [i (in-naturals)]) `(,X ,i))])
 
+
 (define fresh-label!
   (let ([suffix -1])
     (λ ()
@@ -135,6 +136,10 @@
 (define consts (make-parameter (hash)))
 (define-metafunction L
   t : ρ e -> GCC
+  ; Source-level optimization
+  [(t ρ (if (CEQ e 0) e₁ e₂)) (t ρ (if e e₂ e₁))]
+  [(t ρ (if (CEQ 0 e) e₁ e₂)) (t ρ (if e e₂ e₁))]
+  ; Regular rules
   [(t _ n) ([LDC n])]
   [(t _ X) ([LDC n])
    (where n ,(hash-ref (consts) (term X) #f))]
@@ -256,17 +261,25 @@
            (def (to n) (go (SUB n 1))))
     (go 1)))
 
-(define-term fact5.λ
-  (defrec ((def (fact n)
-             (if n (MUL n (fact (SUB n 1))) 1)))
-    (fact 5)))
+(define-term sum.λ
+  (defrec ((def (sum n)
+             (if n (ADD n (sum (SUB n 1))) 0)))
+    (sum 42)))
 
-(define-term fact5.tail.λ
+(define-term fact.tail.λ
   (defrec ((def (fact n a)
              (if n (fact (SUB n 1) (MUL a n)) a)))
     (fact 5 1)))
 
-(define-term fib5.λ
+(define-term ack.λ
+  (defrec ((def (ack m n)
+             (if m (if n
+                       (ack (SUB m 1) (ack m (SUB n 1)))
+                       (ack (SUB m 1) 1))
+                 (ADD n 1))))
+    (ack 4 1)))
+
+(define-term fib.λ
   (defrec ((def (fib n)
              (if (CGT n 2) (ADD (fib (SUB n 1)) (fib (SUB n 2))) n)))
     (fib 5)))
@@ -292,44 +305,7 @@
              (foldl (λ (x y) (CONS x y)) 0 l)))
     (rev (LIST 1 2 3))))
 
-(define-term mine.λ
-  (with-constants ([enum: #f #t]
-                   [enum: Wall Empty Pill Power-Pill Fruit Λ-Man-Start Ghost-Start]
-                   [enum: Standard Fright-Mode Invisible]
-                   [enum: ↑ → ↓ ←])
-    (defrec ((def (list-ref l i default)
-               (LIST-CASE l
-                 [(CONS x y) (if (CEQ i 0) x (list-ref y (SUB i 1)))]
-                 [MT default]))
-             (def (table-ref m x y)
-               (list-ref (list-ref m y Wall) x Wall))
-             )
-    (CONS
-     #f
-     (λ (aiᵢ wᵢ)
-       (WITH-TUPLE wᵢ (map man • •)
-         (WITH-TUPLE man (• man-loc man-dir • •)
-           (WITH-TUPLE man-loc (x y)
-             (CONS
-              #f
-              (LET ([DOWN (table-ref map x (ADD y 1))]
-                    [UP (table-ref map x (SUB y 1))]
-                    [RIGHT (table-ref map (ADD x 1) y)]
-                    [LEFT (table-ref map (SUB x 1) y)])
-                (COND
-                 [(CEQ DOWN Power-Pill) ↓]
-                 [(CEQ UP Power-Pill) ↑]
-                 [(CEQ RIGHT Power-Pill) →]
-                 [(CEQ LEFT Power-Pill) ←]
-                 [(CEQ DOWN Pill) ↓]
-                 [(CEQ UP Pill) ↑]
-                 [(CEQ RIGHT Pill) →]
-                 [(CEQ LEFT Pill) ←]
-                 [(CGT DOWN Wall) ↓]
-                 [(CGT UP Wall) ↑]
-                 [(CGT RIGHT Wall) →]
-                 [(CGT LEFT Wall) ←]
-                 #:else man-dir)))))))))))
+
 
 (define-term ex1.λ
   ((λ (x) (if x down left)) 42))
