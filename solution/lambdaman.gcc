@@ -1,0 +1,1283 @@
+; Warning: unused binding(s): (♥1)
+; Warning: unused binding(s): (♣)
+; Warning: unused binding(s): (♣ ♣1)
+; Warning: unused binding(s): (♣)
+; Warning: unused binding(s): (♣)
+; Warning: unused binding(s): (EOL)
+; Warning: unused binding(s): (♥4)
+; Warning: unused binding(s): (♥5)
+; Warning: function make-table is unused
+; main @ 0:
+  DUM 17
+  LDF 26
+  LDF 34
+  LDF 71
+  LDF 92
+  LDF 112
+  LDF 124
+  LDF 146
+  LDF 173
+  LDF 182
+  LDF 195
+  LDF 215
+  LDF 235
+  LDF 255
+  LDF 329
+  LDF 342
+  LDF 349
+  LDF 377
+  LDF 20
+  TRAP 17
+; lab0 @ 20:
+  LD 1 0
+  CAR
+  LD 1 0
+  CDR
+  LDF 416
+  TAP 2
+; lab1 @ 26:
+  LD 0 0
+  LD 0 1
+  CGT
+  TSEL 30 32
+; lab2 @ 30:
+  LD 0 0
+  RTN
+; lab3 @ 32:
+  LD 0 1
+  RTN
+; lab4 @ 34:
+  LD 0 0
+  ATOM
+  TSEL 37 39
+; lab5 @ 37:
+  LD 0 1
+  RTN
+; lab6 @ 39:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 45
+  TAP 2
+; lab7 @ 45:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 51
+  TAP 2
+; lab8 @ 51:
+  LD 0 1
+  LDF 54
+  TAP 1
+; lab9 @ 54:
+  LD 0 0
+  LD 3 2
+  CGT
+  LDF 59
+  TAP 1
+; lab10 @ 59:
+  LD 0 0
+  TSEL 61 66
+; lab11 @ 61:
+  LD 3 1
+  LD 2 0
+  LD 1 0
+  LD 5 1
+  TAP 3
+; lab12 @ 66:
+  LD 3 1
+  LD 4 1
+  LD 4 2
+  LD 5 1
+  TAP 3
+; lab13 @ 71:
+  LD 0 1
+  ATOM
+  TSEL 74 76
+; lab14 @ 74:
+  LDC 0
+  RTN
+; lab15 @ 76:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 82
+  TAP 2
+; lab16 @ 82:
+  LD 0 0
+  LD 1 0
+  AP 1
+  TSEL 86 88
+; lab17 @ 86:
+  LDC 1
+  RTN
+; lab18 @ 88:
+  LD 1 0
+  LD 0 1
+  LD 2 2
+  TAP 2
+; lab19 @ 92:
+  LD 0 1
+  ATOM
+  TSEL 95 97
+; lab20 @ 95:
+  LDC 0
+  RTN
+; lab21 @ 97:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 103
+  TAP 2
+; lab22 @ 103:
+  LD 0 0
+  LD 1 0
+  AP 1
+  LD 1 0
+  LD 0 1
+  LD 2 3
+  AP 2
+  CONS
+  RTN
+; lab23 @ 112:
+  LD 0 0
+  ATOM
+  TSEL 115 117
+; lab24 @ 115:
+  LDC 0
+  RTN
+; lab25 @ 117:
+  LDC 1
+  LD 0 0
+  CDR
+  LD 1 4
+  AP 1
+  ADD
+  RTN
+; lab26 @ 124:
+  LD 0 0
+  ATOM
+  TSEL 127 129
+; lab27 @ 127:
+  LD 0 2
+  RTN
+; lab28 @ 129:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 135
+  TAP 2
+; lab29 @ 135:
+  LD 1 1
+  TSEL 137 144
+; lab30 @ 137:
+  LD 0 1
+  LD 1 1
+  LDC 1
+  SUB
+  LD 1 2
+  LD 2 5
+  TAP 3
+; lab31 @ 144:
+  LD 0 0
+  RTN
+; lab32 @ 146:
+  LD 0 0
+  ATOM
+  TSEL 149 151
+; lab33 @ 149:
+  LDC 0
+  RTN
+; lab34 @ 151:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 157
+  TAP 2
+; lab35 @ 157:
+  LD 1 1
+  TSEL 159 169
+; lab36 @ 159:
+  LD 0 0
+  LD 0 1
+  LD 1 1
+  LDC 1
+  SUB
+  LD 1 2
+  LD 2 6
+  AP 3
+  CONS
+  RTN
+; lab37 @ 169:
+  LD 1 2
+  LD 0 1
+  CONS
+  RTN
+; lab38 @ 173:
+  LD 0 0
+  LD 0 2
+  LDC 0
+  LD 1 5
+  AP 3
+  LD 0 1
+  LD 0 3
+  LD 1 5
+  TAP 3
+; lab39 @ 182:
+  LD 0 0
+  LD 0 2
+  LD 0 0
+  LD 0 2
+  LDC 0
+  LD 1 5
+  AP 3
+  LD 0 1
+  LD 0 3
+  LD 1 6
+  AP 3
+  LD 1 6
+  TAP 3
+; lab40 @ 195:
+  LD 0 0
+  LDC 0
+  CEQ
+  TSEL 199 201
+; lab41 @ 199:
+  LDC 2
+  RTN
+; lab42 @ 201:
+  LD 0 0
+  LDC 1
+  CEQ
+  TSEL 205 207
+; lab43 @ 205:
+  LDC 3
+  RTN
+; lab44 @ 207:
+  LD 0 0
+  LDC 2
+  CEQ
+  TSEL 211 213
+; lab45 @ 211:
+  LDC 0
+  RTN
+; lab46 @ 213:
+  LDC 1
+  RTN
+; lab47 @ 215:
+  LD 0 0
+  LDC 0
+  CEQ
+  TSEL 219 221
+; lab48 @ 219:
+  LDC 1
+  RTN
+; lab49 @ 221:
+  LD 0 0
+  LDC 1
+  CEQ
+  TSEL 225 227
+; lab50 @ 225:
+  LDC 2
+  RTN
+; lab51 @ 227:
+  LD 0 0
+  LDC 2
+  CEQ
+  TSEL 231 233
+; lab52 @ 231:
+  LDC 3
+  RTN
+; lab53 @ 233:
+  LDC 0
+  RTN
+; lab54 @ 235:
+  LD 0 0
+  LDC 0
+  CEQ
+  TSEL 239 241
+; lab55 @ 239:
+  LDC 3
+  RTN
+; lab56 @ 241:
+  LD 0 0
+  LDC 1
+  CEQ
+  TSEL 245 247
+; lab57 @ 245:
+  LDC 0
+  RTN
+; lab58 @ 247:
+  LD 0 0
+  LDC 2
+  CEQ
+  TSEL 251 253
+; lab59 @ 251:
+  LDC 1
+  RTN
+; lab60 @ 253:
+  LDC 2
+  RTN
+; lab61 @ 255:
+  LD 0 0
+  LDC 1
+  CEQ
+  TSEL 259 261
+; lab62 @ 259:
+  LDC 100
+  RTN
+; lab63 @ 261:
+  LD 0 0
+  LDC 2
+  CEQ
+  TSEL 265 267
+; lab64 @ 265:
+  LDC 300
+  RTN
+; lab65 @ 267:
+  LD 0 0
+  LDC 3
+  CEQ
+  TSEL 271 273
+; lab66 @ 271:
+  LDC 500
+  RTN
+; lab67 @ 273:
+  LD 0 0
+  LDC 4
+  CEQ
+  TSEL 277 279
+; lab68 @ 277:
+  LDC 500
+  RTN
+; lab69 @ 279:
+  LD 0 0
+  LDC 5
+  CEQ
+  TSEL 283 285
+; lab70 @ 283:
+  LDC 700
+  RTN
+; lab71 @ 285:
+  LD 0 0
+  LDC 6
+  CEQ
+  TSEL 289 291
+; lab72 @ 289:
+  LDC 700
+  RTN
+; lab73 @ 291:
+  LD 0 0
+  LDC 7
+  CEQ
+  TSEL 295 297
+; lab74 @ 295:
+  LDC 1000
+  RTN
+; lab75 @ 297:
+  LD 0 0
+  LDC 8
+  CEQ
+  TSEL 301 303
+; lab76 @ 301:
+  LDC 1000
+  RTN
+; lab77 @ 303:
+  LD 0 0
+  LDC 9
+  CEQ
+  TSEL 307 309
+; lab78 @ 307:
+  LDC 2000
+  RTN
+; lab79 @ 309:
+  LD 0 0
+  LDC 10
+  CEQ
+  TSEL 313 315
+; lab80 @ 313:
+  LDC 2000
+  RTN
+; lab81 @ 315:
+  LD 0 0
+  LDC 11
+  CEQ
+  TSEL 319 321
+; lab82 @ 319:
+  LDC 3000
+  RTN
+; lab83 @ 321:
+  LD 0 0
+  LDC 12
+  CEQ
+  TSEL 325 327
+; lab84 @ 325:
+  LDC 3000
+  RTN
+; lab85 @ 327:
+  LDC 5000
+  RTN
+; lab86 @ 329:
+  LD 0 0
+  TSEL 331 340
+; lab87 @ 331:
+  LD 0 1
+  LD 0 0
+  LDC 1
+  SUB
+  LD 0 1
+  LD 1 13
+  AP 2
+  CONS
+  RTN
+; lab88 @ 340:
+  LDC 0
+  RTN
+; lab89 @ 342:
+  LD 0 0
+  LD 0 1
+  LD 0 2
+  LD 1 13
+  AP 2
+  LD 1 13
+  TAP 2
+; lab90 @ 349:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 355
+  TAP 2
+; lab91 @ 355:
+  LD 0 1
+  LDF 358
+  TAP 1
+; lab92 @ 358:
+  LD 2 1
+  CAR
+  LD 2 1
+  CDR
+  LDF 364
+  TAP 2
+; lab93 @ 364:
+  LD 0 1
+  LDF 367
+  TAP 1
+; lab94 @ 367:
+  LD 3 0
+  LD 1 0
+  CEQ
+  TSEL 371 375
+; lab95 @ 371:
+  LD 2 0
+  LD 0 0
+  CEQ
+  RTN
+; lab96 @ 375:
+  LDC 0
+  RTN
+; lab97 @ 377:
+  LD 0 0
+  CDR
+  LDF 381
+  TAP 1
+; lab98 @ 381:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 387
+  TAP 2
+; lab99 @ 387:
+  LD 0 1
+  CDR
+  LDF 391
+  TAP 1
+; lab100 @ 391:
+  LD 1 0
+  CDR
+  LDF 395
+  TAP 1
+; lab101 @ 395:
+  LD 0 0
+  CDR
+  LDF 399
+  TAP 1
+; lab102 @ 399:
+  LD 0 0
+  CDR
+  LDF 403
+  TAP 1
+; lab103 @ 403:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 409
+  TAP 2
+; lab104 @ 409:
+  LD 0 1
+  LDF 412
+  TAP 1
+; lab105 @ 412:
+  LD 1 0
+  LD 0 0
+  MUL
+  RTN
+; lab106 @ 416:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 422
+  TAP 2
+; lab107 @ 422:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 428
+  TAP 2
+; lab108 @ 428:
+  LD 1 0
+  CDR
+  LDF 432
+  TAP 1
+; lab109 @ 432:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 438
+  TAP 2
+; lab110 @ 438:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 444
+  TAP 2
+; lab111 @ 444:
+  LD 0 1
+  CDR
+  LDF 448
+  TAP 1
+; lab112 @ 448:
+  LD 6 0
+  LD 7 4
+  AP 1
+  LDF 453
+  TAP 1
+; lab113 @ 453:
+  LD 0 0
+  SEL 1045 1050
+  LDF 457
+  TAP 1
+; lab114 @ 457:
+  LD 1 0
+  LD 0 0
+  MUL
+  LDF 462
+  TAP 1
+; lab115 @ 462:
+  LDC 1
+  LD 0 0
+  LDC 100
+  DIV
+  ADD
+  LDF 469
+  TAP 1
+; lab116 @ 469:
+  LD 0 0
+  LD 11 12
+  AP 1
+  LDF 474
+  TAP 1
+; lab117 @ 474:
+  LD 2 0
+  LDC 2032
+  MUL
+  LDF 479
+  TAP 1
+; lab118 @ 479:
+  DUM 5
+  LDF 491
+  LDF 536
+  LDF 598
+  LDF 670
+  LDF 754
+  LDF 487
+  TRAP 5
+; lab119 @ 487:
+  LDC 0
+  LDF 1039
+  CONS
+  RTN
+; lab120 @ 491:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 497
+  TAP 2
+; lab121 @ 497:
+  LD 0 1
+  LDF 500
+  TAP 1
+; lab122 @ 500:
+  LD 2 1
+  LDC 0
+  CEQ
+  TSEL 504 510
+; lab123 @ 504:
+  LD 1 0
+  LD 0 0
+  LDC 1
+  SUB
+  CONS
+  RTN
+; lab124 @ 510:
+  LD 2 1
+  LDC 1
+  CEQ
+  TSEL 514 520
+; lab125 @ 514:
+  LD 1 0
+  LDC 1
+  ADD
+  LD 0 0
+  CONS
+  RTN
+; lab126 @ 520:
+  LD 2 1
+  LDC 2
+  CEQ
+  TSEL 524 530
+; lab127 @ 524:
+  LD 1 0
+  LD 0 0
+  LDC 1
+  ADD
+  CONS
+  RTN
+; lab128 @ 530:
+  LD 1 0
+  LDC 1
+  SUB
+  LD 0 0
+  CONS
+  RTN
+; lab129 @ 536:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 542
+  TAP 2
+; lab130 @ 542:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 548
+  TAP 2
+; lab131 @ 548:
+  LD 0 1
+  LDF 551
+  TAP 1
+; lab132 @ 551:
+  LD 1 0
+  LD 0 0
+  LD 4 0
+  AP 2
+  LDF 557
+  TAP 1
+; lab133 @ 557:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 563
+  TAP 2
+; lab134 @ 563:
+  LD 0 1
+  LDF 566
+  TAP 1
+; lab135 @ 566:
+  LDC 0
+  LD 6 0
+  LD 1 0
+  LD 0 0
+  LDC 0
+  LD 21 7
+  AP 4
+  CEQ
+  LDF 576
+  TAP 1
+; lab136 @ 576:
+  LD 0 0
+  TSEL 578 583
+; lab137 @ 578:
+  LD 4 0
+  LD 22 9
+  AP 1
+  LDF 589
+  TAP 1
+; lab138 @ 583:
+  LD 6 0
+  LD 3 0
+  LD 4 0
+  CONS
+  CONS
+  RTN
+; lab139 @ 589:
+  LD 7 0
+  LD 6 0
+  LD 0 0
+  LD 9 0
+  AP 2
+  LD 0 0
+  CONS
+  CONS
+  RTN
+; lab140 @ 598:
+  LD 0 2
+  TSEL 600 603
+; lab141 @ 600:
+  LD 0 0
+  ATOM
+  TSEL 605 607
+; lab142 @ 603:
+  LDC 0
+  RTN
+; lab143 @ 605:
+  LDC 0
+  RTN
+; lab144 @ 607:
+  LD 0 0
+  LD 0 1
+  LD 1 4
+  AP 2
+  LDF 613
+  TAP 1
+; lab145 @ 613:
+  LD 1 2
+  LDC 1
+  SUB
+  LDF 618
+  TAP 1
+; lab146 @ 618:
+  LD 2 0
+  LD 17 16
+  AP 1
+  LD 1 0
+  ATOM
+  SEL 628 634
+  LDC 2
+  DIV
+  ADD
+  RTN
+; lab147 @ 628:
+  LD 2 1
+  LD 17 11
+  AP 1
+  LDF 640
+  AP 1
+  JOIN
+; lab148 @ 634:
+  LD 1 0
+  LD 2 1
+  LD 0 0
+  LD 3 2
+  AP 3
+  JOIN
+; lab149 @ 640:
+  LD 3 0
+  LD 0 0
+  LD 4 4
+  AP 2
+  LDF 646
+  TAP 1
+; lab150 @ 646:
+  LD 0 0
+  ATOM
+  TSEL 649 654
+; lab151 @ 649:
+  LD 4 1
+  LD 19 10
+  AP 1
+  LDF 659
+  TAP 1
+; lab152 @ 654:
+  LD 0 0
+  LD 1 0
+  LD 2 0
+  LD 5 2
+  TAP 3
+; lab153 @ 659:
+  LD 5 0
+  LD 0 0
+  LD 6 4
+  AP 2
+  LDF 665
+  TAP 1
+; lab154 @ 665:
+  LD 0 0
+  LD 1 0
+  LD 4 0
+  LD 7 2
+  TAP 3
+; lab155 @ 670:
+  LD 0 0
+  LDC 0
+  LD 1 4
+  AP 2
+  LDC 0
+  LDC 32
+  LD 1 2
+  AP 3
+  LDF 680
+  TAP 1
+; lab156 @ 680:
+  LD 1 0
+  LDC 1
+  LD 2 4
+  AP 2
+  LDC 1
+  LDC 32
+  LD 2 2
+  AP 3
+  LDF 690
+  TAP 1
+; lab157 @ 690:
+  LD 2 0
+  LDC 2
+  LD 3 4
+  AP 2
+  LDC 2
+  LDC 32
+  LD 3 2
+  AP 3
+  LDF 700
+  TAP 1
+; lab158 @ 700:
+  LD 3 0
+  LDC 3
+  LD 4 4
+  AP 2
+  LDC 3
+  LDC 32
+  LD 4 2
+  AP 3
+  LDF 710
+  TAP 1
+; lab159 @ 710:
+  LD 3 0
+  LD 2 0
+  CGT
+  TSEL 714 718
+; lab160 @ 714:
+  LD 3 0
+  LD 1 0
+  CGT
+  TSEL 722 726
+; lab161 @ 718:
+  LD 2 0
+  LD 1 0
+  CGT
+  TSEL 738 742
+; lab162 @ 722:
+  LD 3 0
+  LD 0 0
+  CGT
+  TSEL 730 732
+; lab163 @ 726:
+  LD 1 0
+  LD 0 0
+  CGT
+  TSEL 750 752
+; lab164 @ 730:
+  LDC 0
+  RTN
+; lab165 @ 732:
+  LDC 3
+  RTN
+; lab166 @ 750:
+  LDC 2
+  RTN
+; lab167 @ 752:
+  LDC 3
+  RTN
+; lab168 @ 738:
+  LD 2 0
+  LD 0 0
+  CGT
+  TSEL 746 748
+; lab169 @ 742:
+  LD 1 0
+  LD 0 0
+  CGT
+  TSEL 750 752
+; lab170 @ 746:
+  LDC 1
+  RTN
+; lab171 @ 748:
+  LDC 3
+  RTN
+; lab166 @ 750:
+  LDC 2
+  RTN
+; lab167 @ 752:
+  LDC 3
+  RTN
+; lab172 @ 754:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 760
+  TAP 2
+; lab173 @ 760:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 766
+  TAP 2
+; lab174 @ 766:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 772
+  TAP 2
+; lab175 @ 772:
+  LD 0 1
+  LDF 775
+  TAP 1
+; lab176 @ 775:
+  LD 2 0
+  CAR
+  LD 2 0
+  CDR
+  LDF 781
+  TAP 2
+; lab177 @ 781:
+  LD 0 1
+  CAR
+  LD 0 1
+  CDR
+  LDF 787
+  TAP 2
+; lab178 @ 787:
+  LD 0 1
+  CDR
+  LDF 791
+  TAP 1
+; lab179 @ 791:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 797
+  TAP 2
+; lab180 @ 797:
+  LD 0 1
+  LDF 800
+  TAP 1
+; lab181 @ 800:
+  LD 3 0
+  LD 9 1
+  LD 10 0
+  AP 2
+  LDF 806
+  TAP 1
+; lab182 @ 806:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 812
+  TAP 2
+; lab183 @ 812:
+  LD 0 1
+  LDF 815
+  TAP 1
+; lab184 @ 815:
+  LD 11 0
+  LD 1 0
+  LD 0 0
+  LDC 0
+  LD 27 7
+  AP 4
+  LDF 823
+  TAP 1
+; lab185 @ 823:
+  LD 0 0
+  LDC 0
+  CEQ
+  TSEL 827 829
+; lab186 @ 827:
+  LDC 0
+  RTN
+; lab187 @ 829:
+  LD 5 0
+  TSEL 831 851
+; lab188 @ 831:
+  LD 12 0
+  LDF 1035
+  LD 10 0
+  LD 28 3
+  AP 2
+  LDC 0
+  LD 8 0
+  LDC 127
+  SUB
+  LD 28 0
+  AP 2
+  LDC 0
+  LD 9 0
+  LDC 127
+  SUB
+  LD 28 0
+  AP 2
+  LD 4 0
+  LDF 853
+  TAP 5
+; lab189 @ 851:
+  LDC 0
+  RTN
+; lab190 @ 853:
+  LD 1 0
+  LDC 2
+  CEQ
+  SEL 969 980
+  LDF 859
+  TAP 1
+; lab191 @ 859:
+  LDF 882
+  LD 1 1
+  LD 30 2
+  AP 2
+  TSEL 864 866
+; lab192 @ 864:
+  LD 1 2
+  TSEL 909 930
+; lab193 @ 866:
+  LD 1 0
+  LD 1 2
+  LD 5 0
+  LD 15 1
+  LD 7 0
+  LD 1 4
+  CONS
+  CONS
+  CONS
+  CONS
+  LD 1 1
+  LD 1 3
+  CONS
+  CONS
+  CONS
+  RTN
+; lab194 @ 882:
+  LD 0 0
+  CDR
+  LDF 886
+  TAP 1
+; lab195 @ 886:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 892
+  TAP 2
+; lab196 @ 892:
+  LD 0 1
+  LDF 895
+  TAP 1
+; lab197 @ 895:
+  LD 1 0
+  LD 9 0
+  LD 34 15
+  AP 2
+  TSEL 900 902
+; lab198 @ 900:
+  LDC 1
+  RTN
+; lab199 @ 902:
+  LD 1 0
+  LD 0 0
+  LD 20 0
+  AP 2
+  LD 9 0
+  LD 34 15
+  TAP 2
+; lab200 @ 909:
+  LD 1 0
+  LD 1 2
+  LD 5 0
+  LD 15 1
+  LD 7 0
+  LD 1 4
+  LDC 200
+  ADD
+  CONS
+  CONS
+  CONS
+  CONS
+  LDF 948
+  LD 1 1
+  LD 30 3
+  AP 2
+  LD 1 3
+  CONS
+  CONS
+  CONS
+  RTN
+; lab201 @ 930:
+  LD 1 0
+  LDC 0
+  LD 25 0
+  LD 24 0
+  LD 7 0
+  LDC 1
+  SUB
+  LD 1 4
+  CONS
+  CONS
+  CONS
+  CONS
+  LD 27 0
+  LD 1 3
+  CONS
+  CONS
+  CONS
+  RTN
+; lab202 @ 948:
+  LD 0 0
+  CDR
+  LDF 952
+  TAP 1
+; lab203 @ 952:
+  LD 0 0
+  CAR
+  LD 0 0
+  CDR
+  LDF 958
+  TAP 2
+; lab204 @ 958:
+  LD 0 1
+  LDF 961
+  TAP 1
+; lab205 @ 961:
+  LDC 1
+  LD 1 0
+  LD 0 0
+  LD 34 9
+  AP 1
+  CONS
+  CONS
+  RTN
+; lab206 @ 969:
+  LD 0 0
+  LD 3 0
+  LD 2 0
+  LDC 1
+  LD 29 8
+  AP 4
+  ST 0 0
+  LDC 0
+  LDF 985
+  AP 1
+  JOIN
+; lab207 @ 980:
+  LD 1 0
+  LDC 3
+  CEQ
+  SEL 991 1007
+  JOIN
+; lab208 @ 985:
+  LD 1 4
+  LDC 10
+  ADD
+  ST 1 4
+  LDC 0
+  RTN
+; lab209 @ 991:
+  LD 0 0
+  LD 3 0
+  LD 2 0
+  LDC 1
+  LD 29 8
+  AP 4
+  ST 0 0
+  LDC 0
+  LD 0 4
+  LDC 50
+  ADD
+  ST 0 4
+  LDC 0
+  LDF 1012
+  AP 2
+  JOIN
+; lab210 @ 1007:
+  LD 1 0
+  LDC 4
+  CEQ
+  SEL 1016 1027
+  JOIN
+; lab211 @ 1012:
+  LDC 2540
+  ST 1 2
+  LDC 0
+  RTN
+; lab212 @ 1016:
+  LD 0 0
+  LD 3 0
+  LD 2 0
+  LDC 1
+  LD 29 8
+  AP 4
+  ST 0 0
+  LDC 0
+  LDF 1029
+  AP 1
+  JOIN
+; lab213 @ 1027:
+  LDC 0
+  JOIN
+; lab214 @ 1029:
+  LD 1 4
+  LD 18 0
+  ADD
+  ST 1 4
+  LDC 0
+  RTN
+; lab215 @ 1035:
+  LD 13 0
+  LD 0 0
+  LD 15 1
+  TAP 2
+; lab216 @ 1039:
+  LDC 0
+  LD 0 1
+  LD 1 3
+  AP 1
+  CONS
+  RTN
+; lab217 @ 1045:
+  LD 7 0
+  CAR
+  LD 8 4
+  AP 1
+  JOIN
+; lab218 @ 1050:
+  LDC 0
+  JOIN

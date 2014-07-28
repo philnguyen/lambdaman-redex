@@ -6,10 +6,7 @@
   ;; GCC syntax
   [(gcc gcc₀ gcc₁ gcc₂ gccₓ) (LDC $n)
                              (LD $n $i)
-                             ADD SUB MUL DIV
-                             CEQ CGT CGTE
-                             ATOM
-                             CONS CAR CDR
+                             o₁ o₂
                              (SEL $t $f) JOIN
                              (LDF $f) (AP $n) RTN
                              (DUM $n) (RAP $n)
@@ -20,15 +17,15 @@
                              (ST $n $i)
                              ; Debug extensions
                              DBUG BRK
-                             ; target language comment
+                             ; Comment
                              (cmt any)]
   [GCC (gcc ... dec ...)]
   [gcc* (side-condition (name gcc* (gcc ...)) (<= (length (term gcc*)) 1048576))]
   [(dec dec₀ dec₁ dec₂ decₓ) (: ℓ gcc ...)]
-  [($n $i $t $f) integer ℓ #|FIXME|#]
+  [($n $i $t $f) integer ℓ]
   [(m n i) integer]
   [(ℓ ℓ₀ ℓ₁ ℓ₂ ℓₓ) variable-not-otherwise-mentioned]
-  ;; basic language
+  ;; λ-man language
   [(e e₀ e₁ e₂ eₓ) (λ (x ...) e) (e e ...) (o₁ e) (o₂ e e) (if e e e)
                    (defrec ((def (f x ...) e) ...) e)
                    (set! x! e)
@@ -62,6 +59,7 @@
   [(ADD* e₁ e₂ e ...) (ADD* (ADD e₁ e₂) e ...)])
 (define-metafunction L
   LET : (B ...) e -> e
+  [(LET () e) e]
   [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)
    (where _ ; Warn about dead code
           ,(let* ([fv (term (FV e))]
@@ -69,14 +67,14 @@
                                     #:unless (or (set-member? fv x) (redex-match? L •x x)))
                            x)])
              (unless (empty? deads)
-               (printf "Warning: dead bindings: ~a~n" #;(term e) deads))))]
+               (printf "; Warning: unused binding(s): ~a~n" #;(term e) deads))))]
   [(LET ([x e_x] ... [(tuple: y ...) z] any ...) e)
    (LET ([x e_x] ...) (WITH-TUPLE z (y ...) (LET (any ...) e)))])
 (define-metafunction L
   LET* : (B ...) e -> e
   [(LET* () e) e]
   [(LET* (any_1 any ...) e) (LET (any_1) (LET* (any ...) e))])
-;; Non-standard + must be int
+;; `AND` and `OR` macros are not standard and must work with Ints
 (define-metafunction L
   AND : e ... -> e
   [(AND) #t]
@@ -137,7 +135,7 @@
   enumerate : X ... -> ([X n] ...)
   [(enumerate X ...) ,(for/list ([X (term (X ...))] [i (in-naturals)]) `(,X ,i))])
 
-
+;; Generate fresh symbol(s)
 (define fresh-label!
   (let ([suffix -1])
     (λ ()
@@ -146,15 +144,15 @@
 (define (fresh-labels! n)
   (for/list ([_ (in-range 0 n)]) (fresh-label!)))
 
-(define free-vars (make-parameter '()))
 ;; Translate closed λ-program into GCC program
+(define free-vars (make-parameter '()))
 (define-metafunction L
   T : e -> (dec ...)
   [(T e) ((: main gcc ... RTN) dec ...) (where (gcc ... dec ...) (t ,(free-vars) e))])
 
 ;; Translate open λ-program with given context to GCC program
 (define consts (make-parameter (hash)))
-(define arities (make-parameter (hash)))
+(define arities (make-parameter (hash))) ; for basic catching of wrong arity
 (define-metafunction L
   t : ρ e -> GCC
   ; Source-level optimization
@@ -211,7 +209,7 @@
           ,(let ([fv (apply set-union (term ((FV e) (FV eₓ) ...)))]) ; TODO may miss some
              (for ([f (term (f ...))])
                (unless (or (set-member? fv f) (redex-match? L •x f))
-                 (printf "Warning: function ~a is unused~n" f)))))]
+                 (printf "; Warning: function ~a is unused~n" f)))))]
   [(t ρ (set! x e)) (gcc ... [ST n i] [LDC 0] dec ...) ; (set! _) returns 0, to make things compose
    (where (gcc ... dec ...) (t ρ e))
    (where (n i) (index-of ρ x))]
@@ -226,7 +224,8 @@
    (where (gcc ... dec ...) (t ρ e))])
 
 ;; TC-optimization afterwards. I don't know how to have it by construction
-;; FIXME: This function is the bottle neck
+;; FIXME: This function is the bottle neck due to naive use of pattern matching.
+;; But that's fine. I love the false sense of heavy optimization
 (define-metafunction L
   opt : (dec ...) -> (dec ...)
   [(opt (any_1 ... (: ℓ gcc ... [SEL ℓ₁ ℓ₂] RTN) any_2 ...))
@@ -244,7 +243,7 @@
    (side-condition (not (redex-match? L (_ ... (_ ... [RAP _] RTN) _ ...) (term (any_1 ...)))))]
   [(opt any) any])
 
-;; convert symbolic program to absolute program
+;; Convert symbolic addresses to absolute ones
 (define-metafunction L
   || : (dec ...) -> gcc*
   [(|| ((: ℓ gcc ...) ...))
@@ -258,19 +257,18 @@
                                      (values ni (cons ni n⋯))))])
                     (for/hash ([ℓ (term (ℓ ...))] [i (reverse (rest ns))])
                       (values ℓ i))))])
-
-;; convert command to use absolute address
-(define-metafunction L
-  symtab@ : symtab $n -> n
-  [(symtab@ _ n) n]
-  [(symtab@ symtab ℓ) ,(hash-ref (term symtab) (term ℓ))])
 (define-metafunction L
   ||ᵢ : symtab gcc -> gcc
   [(||ᵢ symtab (cmt ℓ)) (cmt ,(format "~a @ ~a" (term ℓ) (hash-ref (term symtab) (term ℓ))))]
   [(||ᵢ _ (name gcc (cmt _))) gcc]
   [(||ᵢ symtab (any $n ...)) (any (symtab@ symtab $n) ...)]
   [(||ᵢ _ gcc) gcc])
+(define-metafunction L
+  symtab@ : symtab $n -> n
+  [(symtab@ _ n) n]
+  [(symtab@ symtab ℓ) ,(hash-ref (term symtab) (term ℓ))])
 
+;; Resolve index for given variable and environment
 (define-metafunction L
   index-of : ρ x -> (n i)
   [(index-of ((y ...) ... (z ... x _ ...) _ ...) x)
@@ -278,6 +276,7 @@
    (side-condition (not (member (term x) (term (y ... ...)))))]
   [(index-of ρ x) ,(error (format "Variable ~a not found in context ~a" (term x) (term ρ)))])
 
+;; Compute free variable set
 (define-metafunction L
   FV : e -> any #|Setof x|#
   [(FV (λ (x ...) e)) ,(set-subtract (term (FV e)) (list->set (term (x ...))))]
@@ -293,6 +292,7 @@
   [(FV x) ,(set (term x))]
   [(FV _) ,(set)])
 
+;; Print program
 (define-metafunction L
   fm : GCC -> string
   [(fm (gcc ... (: ℓ gcc_ℓ ...) ...))
@@ -306,12 +306,13 @@
      "\n"
      #:after-last "\n")])
 
+;; Print symbolic/absolute programs with/without optimization
 (define (dump-sym e) (printf (term (fm (T ,e)))))
 (define (dump-sym/opt e) (printf (term (fm (opt (T ,e))))))
 (define (dump e) (printf (term (fm (|| (T ,e))))))
 (define (dump/opt e) (printf (term (fm (|| (opt (T ,e)))))))
 
-;; Example programs
+;;;;; Example programs
 (define-term local.λ
   ((λ (x) (ADD x x)) 21))
 
@@ -319,11 +320,6 @@
   (defrec ((def (go n) (to (ADD n 1)))
            (def (to n) (go (SUB n 1))))
     (go 1)))
-
-(define-term sum.λ
-  (defrec ((def (sum n)
-             (if n (ADD n (sum (SUB n 1))) 0)))
-    (sum 42)))
 
 (define-term fact.tail.λ
   (defrec ((def (fact n a)
@@ -336,38 +332,9 @@
                        (ack (SUB m 1) (ack m (SUB n 1)))
                        (ack (SUB m 1) 1))
                  (ADD n 1))))
-    (ack 4 1)))
-
-(define-term fib.λ
-  (defrec ((def (fib n)
-             (if (CGT n 2) (ADD (fib (SUB n 1)) (fib (SUB n 2))) n)))
-    (fib 5)))
+    (ack 3 4)))
 
 (define-term always-down.λ
   (CONS 42
         (λ (AIᵢ wᵢ) ; step
           (CONS (ADD AIᵢ 1) down))))
-
-(define-term rev.λ
-  (defrec ((def (rev l a)
-             (LIST-CASE l
-               [(CONS x y) (rev y (CONS x a))]
-               [MT a])))
-    (rev (LIST 1 2 3) 0)))
-
-(define-term rev/foldl.λ
-  (defrec ((def (foldl f x l)
-             (LIST-CASE l
-               [(CONS z zs) (foldl f (f z x) zs)]
-               [MT x]))
-           (def (rev l)
-             (foldl (λ (x y) (CONS x y)) 0 l)))
-    (rev (LIST 1 2 3))))
-
-
-
-(define-term ex1.λ
-  ((λ (x) (if x down left)) 42))
-
-(define-term ex2.λ
-  (LET ([x 1] [y 2]) (MUL x y)))

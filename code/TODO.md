@@ -1,2 +1,0 @@
-- [ ] optimize: inline, assume no side effects
-- [ ] optimize compiler's opt
