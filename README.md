@@ -1,6 +1,6 @@
 My attempt at [ICFP Programming Contest 2014](http://icfpcontest.org/) using [PLT Redex](http://redex.racket-lang.org/)
 
-* The ``compiler'' is in [code/lambda-compiler.rkt](https://github.com/philnguyen/lambdaman-redex/blob/master/code/lambda-compiler.rkt)
+* The compiler is in [code/lambda-compiler.rkt](https://github.com/philnguyen/lambdaman-redex/blob/master/code/lambda-compiler.rkt)
 * The program itself is in [code/lambda-prog.rkt](https://github.com/philnguyen/lambdaman-redex/blob/master/code/lambda-prog.rkt)
 * The generated assembly is in [solution/lambdaman.gcc](https://github.com/philnguyen/lambdaman-redex/blob/master/solution/lambdaman.gcc)
 
