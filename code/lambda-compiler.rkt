@@ -1,6 +1,6 @@
 #lang racket/base
 (provide (all-defined-out))
-(require racket/match racket/string racket/list redex/reduction-semantics)
+(require racket/match racket/string racket/list racket/set redex/reduction-semantics)
 
 (define-language L
   ;; GCC syntax
@@ -62,7 +62,14 @@
   [(ADD* e₁ e₂ e ...) (ADD* (ADD e₁ e₂) e ...)])
 (define-metafunction L
   LET : (B ...) e -> e
-  [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)]
+  [(LET ([x e_x] ...) e) ((λ (x ...) e) e_x ...)
+   (where _ ; Warn about dead code
+          ,(let* ([fv (term (FV e))]
+                  [deads (for/list ([x (term (x ...))]
+                                    #:unless (or (set-member? fv x) (redex-match? L •x x)))
+                           x)])
+             (unless (empty? deads)
+               (printf "Warning: dead bindings: ~a~n" #;(term e) deads))))]
   [(LET ([x e_x] ... [(tuple: y ...) z] any ...) e)
    (LET ([x e_x] ...) (WITH-TUPLE z (y ...) (LET (any ...) e)))])
 (define-metafunction L
@@ -94,12 +101,12 @@
   [(WITH-TUPLE x (y) e) (LET ([y x]) e)]
   [(WITH-TUPLE x (•x y ...) e)
    (LET ([x₁ (CDR x)]) (WITH-TUPLE x₁ (y ...) e))
-   (where x₁ ,(variable-not-in (term (e y ...)) (term x)))]
+   (where x₁ ,(variable-not-in (term (e y ...)) '♥))]
   [(WITH-TUPLE x (z y ...) e)
    (LET ([z (CAR x)]
          [x₁ (CDR x)])
      (WITH-TUPLE x₁ (y ...) e))
-   (where x₁ ,(variable-not-in (term (e z y ...)) (term x)))])
+   (where x₁ ,(variable-not-in (term (e z y ...)) '♥))])
 (define-metafunction L
   LIST-CASE : x [(CONS x y) e] [MT e] -> e
   [(LIST-CASE x [(CONS y z) e₁] [MT e₂])
@@ -125,7 +132,7 @@
   BEGIN : e e ... -> e
   [(BEGIN e) e]
   [(BEGIN eₓ ... e) (LET ([x eₓ] ...) e)
-   (where (x ...) ,(variables-not-in (term e) (make-list (length (term (eₓ ...))) '♥)))])
+   (where (x ...) ,(variables-not-in (term e) (make-list (length (term (eₓ ...))) '♣)))])
 (define-metafunction L
   enumerate : X ... -> ([X n] ...)
   [(enumerate X ...) ,(for/list ([X (term (X ...))] [i (in-naturals)]) `(,X ,i))])
@@ -199,7 +206,12 @@
                (term (t ρ ,e)))))
    (where (gcc ... dec ...)
           ,(parameterize ([arities (term any_arities)])
-             (term (t ρ e))))]
+             (term (t ρ e))))
+   (where _ ; Warn about dead code
+          ,(let ([fv (apply set-union (term ((FV e) (FV eₓ) ...)))]) ; TODO may miss some
+             (for ([f (term (f ...))])
+               (unless (or (set-member? fv f) (redex-match? L •x f))
+                 (printf "Warning: function ~a is unused~n" f)))))]
   [(t ρ (set! x e)) (gcc ... [ST n i] [LDC 0] dec ...) ; (set! _) returns 0, to make things compose
    (where (gcc ... dec ...) (t ρ e))
    (where (n i) (index-of ρ x))]
@@ -265,6 +277,21 @@
    (,(length (term ((y ...) ...))) ,(length (term (z ...))))
    (side-condition (not (member (term x) (term (y ... ...)))))]
   [(index-of ρ x) ,(error (format "Variable ~a not found in context ~a" (term x) (term ρ)))])
+
+(define-metafunction L
+  FV : e -> any #|Setof x|#
+  [(FV (λ (x ...) e)) ,(set-subtract (term (FV e)) (list->set (term (x ...))))]
+  [(FV (o e ...)) ,(apply set-union (term ((FV e) ...)))]
+  [(FV (e₁ e ...)) ,(apply set-union (term ((FV e₁) (FV e) ...)))]
+  [(FV (if e ...)) ,(apply set-union (term ((FV e) ...)))]
+  [(FV (defrec ((def (f x ...) eₓ) ...) e))
+   ,(set-subtract (apply set-union (term ((FV e) (FV (λ (x ...) eₓ)) ...)))
+                  (list->set (term (f ...))))]
+  [(FV (set! x! e)) ,(set-add (term (FV e)) (term x!))]
+  [(FV (with-constants _ e)) (FV e)]
+  [(FV (dbg e)) (FV e)]
+  [(FV x) ,(set (term x))]
+  [(FV _) ,(set)])
 
 (define-metafunction L
   fm : GCC -> string
